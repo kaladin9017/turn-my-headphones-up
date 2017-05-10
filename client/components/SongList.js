@@ -6,9 +6,26 @@ import { Link } from 'react-router';
 import fetchSongs from '../queries/fetchSongs';
 
 class SongList extends Component {
-  renderSongs() {
-    return this.props.data.songs.map(song => (<li key={song.id} className="collection-item">{song.title}</li>));
+  onSongDelete(id) {
+    this.props.mutate({
+      variables: { id }
+    })
+      // a slightly different way to refetch information after mutation using react-apollo
+      .then(() => this.props.data.refetch());
   }
+  renderSongs() {
+    return this.props.data.songs.map(({ id, title }) => {
+      return (
+        <li key={id} className="collection-item">
+          {title}
+          <i className="material-icons" onClick={ () => this.onSongDelete(id) }>
+            delete
+          </i>
+        </li>
+      );
+    });
+  }
+
 
   render() {
     return this.props.data.loading ? null : (
@@ -26,4 +43,15 @@ class SongList extends Component {
   }
 }
 
-export default graphql(fetchSongs)(SongList);
+const mutation = gql`
+  mutation DeleteSong($id: ID){
+    deleteSong(id: $id) {
+      id
+    }
+  }
+`
+
+
+export default graphql(mutation)(
+  graphql(fetchSongs, mutation)(SongList)
+);
